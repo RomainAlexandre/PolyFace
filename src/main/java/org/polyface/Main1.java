@@ -2,35 +2,26 @@ package org.polyface;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.ExportException;
 
 public class Main1 {
-	public static void main(String[] args) throws RemoteException {
-		Registry reg;
+	public static void main(String[] args) throws RemoteException, NotBoundException {
+		User romain = new User("Romain", "Etudiant", 10003);
 		
-		try {
-			reg = LocateRegistry.createRegistry(2001);
-		} catch (ExportException ee) {
-			reg = LocateRegistry.getRegistry(2001);
-		}
-
-		User romainStub = new User("Romain", 10003);
-
-		// Enregistrer
-		reg.rebind("rmi://localhost:2001/FacebookRomain", romainStub);
-
-		System.out.println("Romain is in da place !");
+		User cecile = new User("Cecile", "Etudiante", 10007);
+		PublicStub romainStub = cecile.findPublicStub("Romain");
 		
-		try {
-			while(romainStub.getRequetesEnAttente().isEmpty()){
-				romainStub = (User) reg.lookup("rmi://localhost:2001/FacebookRomain");
-			}
-		} catch (NotBoundException e) {
-			e.printStackTrace();
-		}
+		System.out.println("Cecile : J'invite " + romainStub.getDescription());
+		romainStub.inviter(cecile.getMonPublicStub());
 		
-		System.out.println("pouit");
+		System.out.println("Romain : J'accepte");
+		romain.accepter(0);
+		
+		cecile.afficherAmis();
+		
+		romain.ecrireSurMonMur("C'est bientot les partiels ~");
+		romain.ecrireSurMonMur("Je spam mon mur");
+
+		cecile.visiterMur(0);
+		
 	}
 }

@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import java.util.List;
 
 public interface Wall extends Remote {
-    public String visiterMur() throws RemoteException;
+    public List<String> visiterMur() throws RemoteException;
     public List<PublicStub> recupererListeAmis() throws RemoteException;
+    public void notifierAmis(Wall monMur) throws RemoteException;
 }

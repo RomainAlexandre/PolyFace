@@ -1,71 +1,89 @@
 package org.polyface;
 
+import java.rmi.AccessException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
-import java.util.LinkedList;
-import java.util.List;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.ExportException;
 
-public class User extends UnicastRemoteObject implements PublicStub, Wall{
-	private static final long serialVersionUID = 1L;
+public class User{
 	
-	private List<PublicStub> requetesEnAttente;
-    private List<Wall> mursAmis;
-    private List<PublicStub> listeAmis;
-    private String maDescription;
-    private String contenuMur;
-
+	private PublicStubImpl monPublicStub;
+	private Registry reg;
+	private String name;
+    
     public User() throws RemoteException{
-        super();
-        maDescription = "Inconnu";
-        contenuMur = "";
-        requetesEnAttente = new LinkedList<PublicStub>();
-        mursAmis = new LinkedList<Wall>();
-        listeAmis = new LinkedList<PublicStub>();
+        try {
+    		reg = LocateRegistry.createRegistry(2001);
+    	} catch (ExportException ee) {
+    		reg = LocateRegistry.getRegistry(2001);
+    	}
+        monPublicStub = new PublicStubImpl();
+        this.name = "NoName";
+    	System.out.println(name + " : Je m'enregistre dans le registre");
+
+        enregistrerPublicStub();
     }
 
-    public User(String description, int port) throws RemoteException{
-        super(port);
-        maDescription = description;
-        contenuMur = "";
-        requetesEnAttente = new LinkedList<PublicStub>();
-        mursAmis = new LinkedList<Wall>();
-        listeAmis = new LinkedList<PublicStub>();
+    public User(String name, String description, int port) throws RemoteException{
+        try {
+    		reg = LocateRegistry.createRegistry(2001);
+    	} catch (ExportException ee) {
+    		reg = LocateRegistry.getRegistry(2001);
+    	}
+        monPublicStub = new PublicStubImpl(name, description, port);
+        this.name = name;
+    	System.out.println(name + " : Je m'enregistre dans le registre");
+
+        enregistrerPublicStub();
     }
     
-    public List<PublicStub> getRequetesEnAttente() {
-		return requetesEnAttente;
+	public PublicStubImpl getMonPublicStub() {
+		return monPublicStub;
+	}
+
+	public WallImpl getMonMur() {
+		return monPublicStub.getMonMur();
 	}
 	
-    @Override
-    public void inviter(PublicStub stub) throws RemoteException {
-        requetesEnAttente.add(stub);
-        System.out.println("J'ai ete invite");
-        stub.accept(this, this);
-    }
-
-    @Override
-    public String getDescription() throws RemoteException {
-        return maDescription;
+    private void enregistrerPublicStub() throws AccessException, RemoteException{
+		reg.rebind("rmi://localhost:2001/Facebook"+name, monPublicStub);
     }
     
-    @Override
-    public Wall accept(PublicStub stub, Wall wall) throws RemoteException {
-    	System.out.println("J'accepte");
-    	this.mursAmis.add(wall);
-    	this.listeAmis.add(stub);
+    public PublicStub findPublicStub(String name) throws AccessException, RemoteException, NotBoundException{
+    	return (PublicStub) reg.lookup("rmi://localhost:2001/Facebook"+name);
+    }
+    
+    public void ecrireSurMonMur(String s) throws RemoteException{
+    	this.getMonMur().ajouterContenuMur(s);
+    	for(Wall w : this.monPublicStub.getMursAmis()){
+    		w.notifierAmis(this.getMonMur());
+    	}
+    }
+    
+    public void accepter(int numeroPos) throws RemoteException {
+    	PublicStub p = this.monPublicStub.getRequetesEnAttente().get(numeroPos);
     	
-        return this;
-    }
-    
-
-    @Override
-    public String visiterMur()  throws RemoteException{
-        return contenuMur;
+    	Wall w = p.accept(getMonPublicStub(), getMonMur());
+    	
+    	this.monPublicStub.getMursAmis().add(w);
+    	this.getMonMur().getListeAmis().add(p);
     }
 
-    @Override
-    public List<PublicStub> recupererListeAmis() throws RemoteException {
-        return listeAmis;
-    }
-    
+	public void afficherAmis() throws RemoteException {
+		System.out.println(name + " : Mes amis sont : ");
+		for(PublicStub p : this.getMonMur().getListeAmis()){
+			System.out.println(p.getDescription());
+		}
+	}
+
+	public void visiterMur(int i) throws RemoteException {
+		Wall w = this.getMonMur().getMurAVisiter().get(0);
+    	
+		System.out.println(name + " : J'affiche un mur :");
+    	for(String s : w.visiterMur()){
+    		System.out.println(s);
+    	}
+	}
 }
