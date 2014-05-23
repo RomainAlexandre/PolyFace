@@ -9,7 +9,7 @@ import java.rmi.server.ExportException;
 
 public class User{
 	
-	private PublicStubImpl monPublicStub;
+	private SmartProxy monPublicStub;
 	private Registry reg;
 	private String name;
     
@@ -19,7 +19,7 @@ public class User{
     	} catch (ExportException ee) {
     		reg = LocateRegistry.getRegistry(2001);
     	}
-        monPublicStub = new PublicStubImpl();
+        monPublicStub = new SmartProxy();
         this.name = "NoName";
     	System.out.println(name + " : Je m'enregistre dans le registre");
 
@@ -32,7 +32,7 @@ public class User{
     	} catch (ExportException ee) {
     		reg = LocateRegistry.getRegistry(2001);
     	}
-        monPublicStub = new PublicStubImpl(name, description, port);
+        monPublicStub = new SmartProxy(name, description, port);
         this.name = name;
     	System.out.println(name + " : Je m'enregistre dans le registre");
 
@@ -40,15 +40,15 @@ public class User{
     }
     
 	public PublicStubImpl getMonPublicStub() {
-		return monPublicStub;
+		return monPublicStub.getPublicStubImpl();
 	}
 
 	public WallImpl getMonMur() {
-		return monPublicStub.getMonMur();
+		return monPublicStub.getPublicStubImpl().getMonMur();
 	}
 	
     private void enregistrerPublicStub() throws AccessException, RemoteException{
-		reg.rebind("rmi://localhost:2001/Facebook"+name, monPublicStub);
+		reg.rebind("rmi://localhost:2001/Facebook"+name, (PublicStub) monPublicStub);
     }
     
     public PublicStub findPublicStub(String name) throws AccessException, RemoteException, NotBoundException{
@@ -57,17 +57,17 @@ public class User{
     
     public void ecrireSurMonMur(String s) throws RemoteException{
     	this.getMonMur().ajouterContenuMur(s);
-    	for(Wall w : this.monPublicStub.getMursAmis()){
+    	for(Wall w : this.monPublicStub.getPublicStubImpl().getMursAmis()){
     		w.notifierAmis(this.getMonMur());
     	}
     }
     
     public void accepter(int numeroPos) throws RemoteException {
-    	PublicStub p = this.monPublicStub.getRequetesEnAttente().get(numeroPos);
+    	PublicStub p = this.monPublicStub.getPublicStubImpl().getRequetesEnAttente().remove(numeroPos);
     	
     	Wall w = p.accept(getMonPublicStub(), getMonMur());
     	
-    	this.monPublicStub.getMursAmis().add(w);
+    	this.monPublicStub.getPublicStubImpl().getMursAmis().add(w);
     	this.getMonMur().getListeAmis().add(p);
     }
 
