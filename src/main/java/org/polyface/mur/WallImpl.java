@@ -1,27 +1,29 @@
-package org.polyface;
+package org.polyface.mur;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.polyface.user.PublicStub;
+
 public class WallImpl extends UnicastRemoteObject implements Wall {
 	private static final long serialVersionUID = 637430402234320754L;
 	
 	private List<PublicStub> listeAmis;
 	private List<Wall> murAVisiter;
-    private List<String> contenuMur;
+    private List<Message> contenuMur;
     
 	public WallImpl() throws RemoteException{
         super();
-        contenuMur = new LinkedList<String>();
+        contenuMur = new LinkedList<Message>();
         listeAmis = new LinkedList<PublicStub>();
         murAVisiter = new LinkedList<Wall>();
     }
 
     public WallImpl(int port) throws RemoteException{
         super(port);
-        contenuMur = new LinkedList<String>();
+        contenuMur = new LinkedList<Message>();
         listeAmis = new LinkedList<PublicStub>();
         murAVisiter = new LinkedList<Wall>();
     }
@@ -34,12 +36,12 @@ public class WallImpl extends UnicastRemoteObject implements Wall {
     	return murAVisiter;
     }
     
-    public void ajouterContenuMur(String s){
+    public void ajouterContenuMur(Message s){
     	this.contenuMur.add(s);
     }
     
     @Override
-    public List<String> visiterMur()  throws RemoteException{
+    public List<Message> visiterMur()  throws RemoteException{
         return contenuMur;
     }
 
@@ -50,6 +52,7 @@ public class WallImpl extends UnicastRemoteObject implements Wall {
 
 	@Override
 	public void notifierAmis(Wall monMur) throws RemoteException {
+		System.out.println("* Nouveau message posté! *");
 		if(!murAVisiter.contains(monMur)){
 			murAVisiter.add(monMur);
 		}

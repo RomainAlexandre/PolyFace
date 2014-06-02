@@ -1,6 +1,9 @@
-package org.polyface;
+package org.polyface.user;
 
 import java.rmi.RemoteException;
+import java.util.List;
+
+import org.polyface.mur.Wall;
 
 public class SmartProxy implements PublicStub {
 	private static final long serialVersionUID = -744929499781069541L;
@@ -27,17 +30,26 @@ public class SmartProxy implements PublicStub {
     }
     
 	@Override
-	public void inviter(PublicStub stub) throws RemoteException {
-		monStubRmi.inviter(stub);
+	public boolean inviter(PublicStub stub) throws RemoteException {
+		return monStubRmi.inviter(stub);
 	}
 
 	@Override
 	public String getDescription() throws RemoteException {
-		return "Je suis " + monNom + " et voici ma description : " + maDescription;
+		return "Je suis " + monNom + " et voici ma description : " + maDescription + " (dans proxy)";
 	}
 
 	@Override
 	public Wall accept(PublicStub stub, Wall wall) throws RemoteException {
 		return monStubRmi.accept(stub, wall);
 	}
+
+	public List<Wall> getMursAmis() {
+		return this.getPublicStubImpl().getMursAmis();
+	}
+
+	public List<PublicStub> getRequetesEnAttente() {
+		return this.getPublicStubImpl().getRequetesEnAttente();
+	}
+	
 }
