@@ -53,7 +53,7 @@ public class PublicStubImpl extends UnicastRemoteObject implements PublicStub {
 		if (this.getMonMur().getListeAmis().contains(stub) || stub.getDescription().equals(this.getDescription()))
 			return false;
 		requetesEnAttente.add(stub);
-		System.out.println("* Nouvelle invitation reçue! *");
+		System.out.println("\n* Invitation de "+ stub.getName() + " reçue! *");
 		return true;
 	}
 
@@ -62,10 +62,15 @@ public class PublicStubImpl extends UnicastRemoteObject implements PublicStub {
 		return "Je suis " + monNom + " et voici ma description : "
 				+ maDescription;
 	}
+	
+	@Override
+	public String getName() throws RemoteException {
+		return this.monNom;
+	}
 
 	@Override
 	public Wall accept(PublicStub stub, Wall wall) throws RemoteException {
-		System.out.println("* Invitation acceptée *");
+		System.out.println("\n* Votre invitation a été acceptée par " + stub.getName() +" *");
 		this.mursAmis.add(wall);
 		this.monMur.getListeAmis().add(stub);
 

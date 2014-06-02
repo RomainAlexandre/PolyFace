@@ -9,5 +9,6 @@ import org.polyface.mur.Wall;
 public interface PublicStub extends Remote, Serializable{
 	public boolean inviter(PublicStub stub) throws RemoteException;
 	public String getDescription() throws RemoteException;
+	public String getName() throws RemoteException;
 	public Wall accept(PublicStub stub, Wall wall) throws RemoteException;
 }

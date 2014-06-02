@@ -21,7 +21,7 @@ public class SmartProxy implements PublicStub {
     
     public SmartProxy(String name, String description, int port) throws RemoteException{
         monNom = name;
-        maDescription = description;
+        maDescription = "Je suis " + name + " et voici ma description : " + description + " (dans proxy)";
         monStubRmi =  new PublicStubImpl(name, description, port);
     }
     
@@ -36,7 +36,12 @@ public class SmartProxy implements PublicStub {
 
 	@Override
 	public String getDescription() throws RemoteException {
-		return "Je suis " + monNom + " et voici ma description : " + maDescription + " (dans proxy)";
+		return maDescription;
+	}
+	
+	@Override
+	public String getName() throws RemoteException {
+		return this.monNom;
 	}
 
 	@Override

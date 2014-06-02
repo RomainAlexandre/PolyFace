@@ -19,6 +19,8 @@ public class UserInterface {
 	private User user;
 	private Registry reg;
 	private List<String> commandesPrincipales;
+	private static final String rmiAddress = "rmi://localhost:2001/Facebook";
+	private Scanner scanner;
 
 	public UserInterface(User u) throws RemoteException {
 		this.user = u;
@@ -29,10 +31,11 @@ public class UserInterface {
 		}
 		System.out
 				.println("*** Enregistrement dans le registre de l'utilisateur ***");
-		reg.rebind("rmi://localhost:2001/Facebook" + user.getName(),
+		reg.rebind(rmiAddress + user.getName(),
 				(PublicStub) user.getMonPublicStub());
 		afficherEtape("Bienvenue " + user.getName() + "!");
 		this.initCommandes();
+		scanner = new Scanner(System.in);
 	}
 
 	/**
@@ -55,25 +58,10 @@ public class UserInterface {
 	}
 
 	public void start() {
-		this.menuPrincipal();
-	}
-
-	/**
-	 * Affiche le menu principal et gere les actions
-	 * commandesPrincipales.add("1 Afficher mon mur.");
-	 * commandesPrincipales.add("2 Afficher mes amis.");
-	 * commandesPrincipales.add("3 Voir mes demandes d'amis.");
-	 * commandesPrincipales.add("4 Afficher tous les utilisateurs.");
-	 * commandesPrincipales.add("5 Afficher les amis d'amis.");
-	 * commandesPrincipales.add("6 Faire une demande d'amis.");
-	 * commandesPrincipales.add("7 Poster un message.");
-	 * commandesPrincipales.add("8 Quitter.");
-	 */
-	private void menuPrincipal() {
 		int n = 0;
 		while (n != 7) {
-			System.out.println("\nQue souhaitez-vous faire? ");
-			n = this.displayMenu(this.commandesPrincipales, false);
+			n = this.displayMenu(this.commandesPrincipales,
+					"Que souhaitez-vous faire? ", false);
 			switch (n) {
 			case 1:
 				this.displayMyWall();
@@ -85,7 +73,7 @@ public class UserInterface {
 				this.displayMyDemands();
 				break;
 			case 4:
-				this.displayUsers();
+				this.displayAllUsers();
 				break;
 			case 5:
 				this.inviteFriend();
@@ -95,27 +83,32 @@ public class UserInterface {
 				break;
 			default:
 				this.afficherEtape("A bientot!");
+				this.scanner.close();
 				break;
 			}
 		}
 	}
 
-	private void displayUsers() {
+	/**
+	 * Affiche le nom de tous les utilisateurs enregistrés
+	 */
+	private void displayAllUsers() {
 		try {
 			String[] list = reg.list();
-			for(String s : list){
-				System.out.println(s.replaceFirst("rmi://localhost:2001/Facebook", ""));
+			for (String s : list) {
+				System.out.println(s.replaceFirst(rmiAddress, ""));
 			}
 		} catch (Exception e) {
 			System.out.println("Erreur lors de la recuperation de la liste");
 		}
-		
 	}
 
+	/**
+	 * Demande le nom d'un utilisateur afin de l'inviter
+	 */
 	private void inviteFriend() {
 		System.out.println("Rentrez le nom de l'utilisateur à ajouter :");
-		Scanner sc = new Scanner(System.in);
-		String name = sc.next();
+		String name = scanner.next();
 		PublicStub stub;
 		try {
 			stub = this.getPublicStub(name);
@@ -133,22 +126,28 @@ public class UserInterface {
 		}
 	}
 
+	/**
+	 * Gestion des demandes d'amis
+	 */
 	private void displayMyDemands() {
 		List<PublicStub> demandes;
 		demandes = user.getMonPublicStub().getRequetesEnAttente();
 		if (demandes.isEmpty()) {
-			System.out.println("Pas de demandes!");
+			System.out.println("*** Pas de demandes! ***");
 		} else {
 			this.acceptDemands(demandes);
 		}
 	}
 
+	/**
+	 * Affiche les demandes d'amis et permet de les accepter
+	 * @param demandes
+	 */
 	private void acceptDemands(List<PublicStub> demandes) {
 		while (!demandes.isEmpty()) {
 			System.out.println("*** Mes demandes d'ami : ***");
-			this.displayPublicStubMenu(demandes);
-			System.out.println("Entrer le numéro de la personne à accepter");
-			int n = getEntry(demandes.size() + 1);
+			int n = this.displayPublicStubMenu(demandes,
+					"Entrer le numéro de la personne à accepter : ");
 			if (n <= demandes.size()) {
 				try {
 					user.accepter(n - 1);
@@ -167,8 +166,7 @@ public class UserInterface {
 	 */
 	private void postMessage() {
 		System.out.println("Entrer le message : ");
-		Scanner sc = new Scanner(System.in);
-		String message = sc.next();
+		String message = scanner.next();
 		try {
 			this.user.ecrireSurMonMur(message);
 			System.out.println("*** Message posté! ***");
@@ -186,45 +184,40 @@ public class UserInterface {
 		List<Message> messages;
 		try {
 			messages = user.getMessagesMur();
-			if (messages.isEmpty()) {
-				System.out.println("Pas de message à afficher!");
-			} else {
-				System.out.println("*** Mon mur : ***");
-				for (Message m : messages)
-					System.out.println(m);
-			}
+			displayWall(messages, user.getName());
 		} catch (RemoteException e) {
 			System.out.println("Erreur lors de la recuperation du mur");
 		}
 	}
 
 	/**
-	 * Affiche le mur du n ieme ami de l'utilisateur
+	 * Affiche liste de messages d'une personne
 	 * 
-	 * @throws RemoteException
+	 * @param messages
 	 */
-	private void displayWall(int n) throws RemoteException {
-		Wall w = user.getMonPublicStub().getMursAmis().get(n);
-		List<Message> m = w.visiterMur();
-		if (m.isEmpty()) {
+	private void displayWall(List<Message> messages, String name) {
+		if (messages.isEmpty()) {
 			System.out.println("*** Pas de messages ***");
 		} else {
-			for (Message s : w.visiterMur()) {
-				System.out.println(s);
+			System.out.println("*** Mur de " + name + " : ***\n");
+			for (Message s : messages) {
+				System.out.println(s+"\n");
 			}
 		}
 	}
 
-	private void displayPublicStubMenu(List<PublicStub> amis) {
+	private int displayPublicStubMenu(List<PublicStub> amis, String message) {
 		try {
 			for (int i = 1; i <= amis.size(); i++) {
 				System.out
 						.println(i + " - " + amis.get(i - 1).getDescription());
 			}
 		} catch (RemoteException e) {
-			return;
+			return -1;
 		}
 		System.out.println(amis.size() + 1 + " - Retour.");
+		System.out.print(message);
+		return getEntry(amis.size() + 1);
 	}
 
 	/**
@@ -236,15 +229,16 @@ public class UserInterface {
 		List<PublicStub> amis;
 		amis = user.getMonMur().getListeAmis();
 		if (amis.isEmpty()) {
-			System.out.println("Pas d'amis!");
+			System.out.println("*** Pas d'amis! ***");
 		} else {
 			System.out.println("*** Mes amis : ***");
-			System.out.println("Afficher le mur de quel ami?");
-			this.displayPublicStubMenu(amis);
-			int n = getEntry(amis.size() + 1);
+			int n = this.displayPublicStubMenu(amis,
+					"Afficher le mur de quel ami? ");
 			try {
-				if (n <= amis.size())
-					this.displayWall(n - 1);
+				if (n <= amis.size()) {
+					Wall w = user.getMonPublicStub().getMursAmis().get(n - 1);
+					this.displayWall(w.visiterMur(), amis.get(n - 1).getName());
+				}
 			} catch (RemoteException e) {
 				System.out.println("Erreur lors du chargement du mur.");
 			}
@@ -252,38 +246,35 @@ public class UserInterface {
 	}
 
 	/**
-	 * Affiche les commandes et renvoie la commande entree par l'utilisateur
+	 * Demande a l'utilisateur de rentrer un entier entre 1 et s compris
+	 */
+	private int getEntry(int s) {
+		// init des variables de saisie
+		String saisie = null;
+		// boucler tant que la saisie n'est pas valide
+		do {
+			saisie = scanner.next();
+		} while (!checkMenu(s, saisie));
+		// renvoie le choix selectionne
+		return Integer.parseInt(saisie);
+	}
+
+	/**
+	 * Affiche les commandes et renvoie le numero entre par l'utilisateur
 	 * 
 	 * @return
 	 */
-	private int displayMenu(List<?> commandes, boolean retour) {
+	private int displayMenu(List<?> commandes, String message, boolean retour) {
+		System.out.println();
 		for (int i = 1; i <= commandes.size(); i++) {
 			System.out.println(i + " - " + commandes.get(i - 1).toString());
 		}
 		if (retour) {
 			System.out.println(commandes.size() + 1 + " - Retour.");
 		}
+		System.out.print(message);
 		int s = retour ? commandes.size() : commandes.size() + 1;
 		return getEntry(s);
-	}
-
-	private int getEntry(int s) {
-		// init des variables de saisie
-		String saisie = null;
-		Scanner sc = new Scanner(System.in);
-		// boucler tant que la saisie n'est pas valide
-		do {
-			saisie = sc.next();
-		} while (!checkMenu(s, saisie));
-		// renvoie le choix selectionne
-		return Integer.parseInt(saisie);
-	}
-
-	private void afficherEtape(String s) {
-		System.out.println();
-		System.out.println("-----------------------------------");
-		System.out.println(s);
-		System.out.println("-----------------------------------");
 	}
 
 	/**
@@ -301,5 +292,12 @@ public class UserInterface {
 		if (choix < 1 || choix > n)
 			return false;
 		return true;
+	}
+
+	private void afficherEtape(String s) {
+		System.out.println();
+		System.out.println("-----------------------------------");
+		System.out.println(s);
+		System.out.println("-----------------------------------");
 	}
 }
