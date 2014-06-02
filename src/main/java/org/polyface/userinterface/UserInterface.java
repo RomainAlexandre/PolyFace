@@ -26,9 +26,10 @@ public class UserInterface {
 		this.user = u;
 		try {
 			reg = LocateRegistry.createRegistry(2001);
-		} catch (Exception ee) {
+		} catch (RemoteException e) {
 			reg = LocateRegistry.getRegistry(2001);
 		}
+
 		System.out
 				.println("*** Enregistrement dans le registre de l'utilisateur ***");
 		reg.rebind(rmiAddress + user.getName(),
@@ -81,9 +82,12 @@ public class UserInterface {
 			case 6:
 				this.postMessage();
 				break;
-			default:
+			case 7:
 				this.afficherEtape("A bientot!");
 				this.scanner.close();
+				System.exit(0);
+			default:
+				System.out.println("*** Veuillez taper un chiffre entre 1 et 7 ***");
 				break;
 			}
 		}
@@ -141,6 +145,7 @@ public class UserInterface {
 
 	/**
 	 * Affiche les demandes d'amis et permet de les accepter
+	 * 
 	 * @param demandes
 	 */
 	private void acceptDemands(List<PublicStub> demandes) {
@@ -201,7 +206,7 @@ public class UserInterface {
 		} else {
 			System.out.println("*** Mur de " + name + " : ***\n");
 			for (Message s : messages) {
-				System.out.println(s+"\n");
+				System.out.println(s + "\n");
 			}
 		}
 	}
